@@ -26,24 +26,33 @@ def train_crop_model(crop):
     print(f"\n🚜 Training model for {crop}")
 
     df = load_crop_data(f"data/raw/{crop}.csv")
-    df = generate_synthetic_price(df)
-    df = add_lag_features(df)
+    df = generate_synthetic_price(df, crop)
+    # df = add_lag_features(df)
     df = encode_month(df)
     df = preprocess(df)
 
+    # features = [
+    #     'Rainfall', 'WPI',
+    #     'Month_sin', 'Month_cos',
+    #     'Price_lag_1', 'Price_lag_2',
+    #     'Price_lag_3', 'Price_roll_mean_3'
+    # ]
     features = [
-        'Rainfall', 'WPI',
-        'Month_sin', 'Month_cos',
-        'Price_lag_1', 'Price_lag_2',
-        'Price_lag_3', 'Price_roll_mean_3'
+        'Rainfall',
+        'WPI',
+        'Month_sin',
+        'Month_cos'
     ]
+
 
     X = df[features]
     y = df['Price']
+    print("Price statistics:")
+    print(y.describe())
 
     selected_features, _ = select_features(X, y)
     X = X[selected_features]
-
+    joblib.dump(selected_features, f"models/{crop}_features.pkl")
     X_seq, y_seq = create_sequences(X, y, SEQ_LEN)
 
     split = int(0.8 * len(X_seq))
