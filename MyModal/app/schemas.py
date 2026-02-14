@@ -10,3 +10,13 @@ class PredictionRequest(BaseModel):
 class PredictionResponse(BaseModel):
     crop: str
     predicted_price: float
+
+
+class CropRecommendationRequest(BaseModel):
+    Nitrogen: float
+    Phosphorus: float
+    Potassium: float
+    Temperature: float
+    Humidity: float
+    pH_Value: float
+    Rainfall: float

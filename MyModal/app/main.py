@@ -1,11 +1,14 @@
 from fastapi import FastAPI, HTTPException
 import os
+from app.schemas import CropRecommendationRequest
+from app.utils import predict_top_3_crops
 
 from app.utils import predict_crop_price
+ 
 
 app = FastAPI(
-    title="Crop Price Prediction API",
-    description="LSTM-based crop price prediction system",
+    title="AgriConnect API",
+    description="Price Prediction and Crop recommendation Api using lstm, rf",
     version="2.0"
 )
 
@@ -33,3 +36,7 @@ def predict_price(crop: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/predict/crop")
+def recommend_crop(data: CropRecommendationRequest):
+    return predict_top_3_crops(data.dict())

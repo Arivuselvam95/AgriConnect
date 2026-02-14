@@ -93,3 +93,44 @@ def predict_crop_price(crop: str):
     prediction = y_scaler.inverse_transform(scaled_prediction)[0][0]
 
     return float(prediction), last_actual_prices
+
+
+
+def load_crop_model():
+    model = joblib.load("models/crop_model.pkl")
+    scaler = joblib.load("models/crop_scaler.pkl")
+    encoder = joblib.load("models/crop_label_encoder.pkl")
+    return model, scaler, encoder
+
+
+def predict_top_3_crops(input_data):
+
+    model, scaler, encoder = load_crop_model()
+
+    feature_order = [
+        "Nitrogen",
+        "Phosphorus",
+        "Potassium",
+        "Temperature",
+        "pH_Value",
+        "Rainfall"
+    ]
+
+    features = np.array([[input_data[col] for col in feature_order]])
+
+    features_scaled = scaler.transform(features)
+
+    probabilities = model.predict_proba(features_scaled)[0]
+
+    top_3_idx = np.argsort(probabilities)[-3:][::-1]
+
+    results = []
+    for idx in top_3_idx:
+        results.append({
+            "crop": encoder.inverse_transform([idx])[0],
+            "confidence": round(float(probabilities[idx]), 3)
+        })
+
+    return {
+        "top_3_crops": results
+    }

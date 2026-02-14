@@ -1,0 +1,3 @@
+from src.models.train_crop_recommendation import train_crop_recommendation
+
+train_crop_recommendation()
