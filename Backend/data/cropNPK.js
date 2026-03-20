@@ -10,6 +10,66 @@ module.exports = [
     temperature_max: 35
   },
   {
+    crop: "Cabbage",
+    Nitrogen: 120,
+    Phosphorus: 60,
+    Potassium: 60,
+    pH_min: 6.0,
+    pH_max: 7.5,
+    temperature_min: 15,
+    temperature_max: 25
+  },
+  {
+    crop: "Carrot",
+    Nitrogen: 80,
+    Phosphorus: 50,
+    Potassium: 100,
+    pH_min: 6.0,
+    pH_max: 7.0,
+    temperature_min: 16,
+    temperature_max: 24
+  },
+  {
+    crop: "Beetroot",
+    Nitrogen: 70,
+    Phosphorus: 40,
+    Potassium: 80,
+    pH_min: 6.0,
+    pH_max: 7.5,
+    temperature_min: 18,
+    temperature_max: 30
+  },
+  {
+    crop: "Beans",
+    Nitrogen: 40,
+    Phosphorus: 60,
+    Potassium: 50,
+    pH_min: 6.0,
+    pH_max: 7.5,
+    temperature_min: 18,
+    temperature_max: 30
+  },
+  {
+    crop: "Chilli",
+    Nitrogen: 100,
+    Phosphorus: 50,
+    Potassium: 50,
+    pH_min: 6.0,
+    pH_max: 7.5,
+    temperature_min: 20,
+    temperature_max: 30
+  },
+  {
+    crop: "Turmeric",
+    Nitrogen: 100,
+    Phosphorus: 50,
+    Potassium: 120,
+    pH_min: 5.5,
+    pH_max: 7.5,
+    temperature_min: 20,
+    temperature_max: 35
+  },
+  {
     crop: "Wheat",
     Nitrogen: 100,
     Phosphorus: 50,

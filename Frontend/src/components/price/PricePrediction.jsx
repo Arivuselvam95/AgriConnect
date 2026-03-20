@@ -34,6 +34,7 @@ const PricePrediction = () => {
   const [activeTab, setActiveTab] = useState('trend'); // 'trend' or 'lastweek'
   const [rangeMonths, setRangeMonths] = useState(12); // 3,6,12
   const [activePanel, setActivePanel] = useState('prediction'); // 'prediction' or 'market'
+  const [selectedFutureMonthIndex, setSelectedFutureMonthIndex] = useState(0); // 0 = next month, 1 and 2 = next 2/3 months
   const [marketFilters, setMarketFilters] = useState({
     State: 'Tamil Nadu',
     District: 'Erode',
@@ -49,10 +50,10 @@ const PricePrediction = () => {
 
   const defaultCrops = [
     { name: 'Cabbage', icon: '🥬' },
-    { name: 'Paddy', icon: '🌾' },
     { name: 'Maize', icon: '🌽' },
-    { name: 'Cotton', icon: '🌸' },
+    { name: 'Carrot', icon: '🥕' },
     { name: 'Beans', icon: '🫛' },
+    { name: 'Beetroot', icon: '🫜' },
   ];
 
   const handleCropSelect = async (crop) => {
@@ -97,6 +98,8 @@ const PricePrediction = () => {
   const predictPrice = async (crop) => {
     setLoading(true);
     setError('');
+    setActiveTab('trend');
+    setSelectedFutureMonthIndex(0);
     setPredictionData(null);
     setLastWeekData(null);
 
@@ -140,20 +143,33 @@ const PricePrediction = () => {
   const getChartData = () => {
     if (!predictionData) return null;
 
+    const now = new Date();
+
+    // last 12 month labels ending at current month
     const allLabels = Array(12)
       .fill()
-      .map((_, i) => `Month ${i + 1}`);
-    const labels = [...allLabels.slice(12 - rangeMonths), 'Predicted'];
+      .map((_, i) => {
+        const labelDate = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+        return labelDate.toLocaleString('default', { month: 'short' });
+      });
+
+    const futureLabels = [1, 2, 3].map((offset) => {
+      const futureDate = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      return futureDate.toLocaleString('default', { month: 'short' });
+    });
+
+    const labels = [...allLabels.slice(12 - rangeMonths), ...futureLabels];
     const actualPrices = predictionData.graph_data.actual_prices_last_12_months.slice(
       12 - rangeMonths
     );
+    const predictions = predictionData.predicted_prices_next_3_months || predictionData.graph_data.predictions || [];
 
     return {
       labels,
       datasets: [
         {
           label: 'Actual Price',
-          data: [...actualPrices, null],
+          data: [...actualPrices, null, null, null],
           borderColor: '#155e63',
           backgroundColor: 'rgba(21, 94, 99, 0.08)',
           tension: 0.4,
@@ -163,8 +179,8 @@ const PricePrediction = () => {
         {
           label: 'Predicted Price',
           data: [
-            ...Array(12).fill(null),
-            predictionData.graph_data.predicted_next_month,
+            ...Array(rangeMonths).fill(null),
+            ...predictions,
           ],
           borderColor: '#f57c00',
           backgroundColor: 'rgba(245, 124, 0, 0.1)',
@@ -174,6 +190,14 @@ const PricePrediction = () => {
         },
       ],
     };
+  };
+
+  const getFutureMonthLabels = () => {
+    const now = new Date();
+    return [1, 2, 3].map((offset) => {
+      const futureDate = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      return futureDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+    });
   };
 
   const chartOptions = {
@@ -206,9 +230,9 @@ const PricePrediction = () => {
   // effect: fetch last week prices when tab switches and crop available
   useEffect(() => {
     if (activeTab === 'lastweek' && predictionData) {
-      fetchLastWeekPrices(predictionData.crop);
+      fetchLastWeekPrices(predictionData.crop || cropName);
     }
-  }, [activeTab, predictionData]);
+  }, [activeTab, predictionData, cropName]);
 
   return (
     <div className="price-prediction-page">
@@ -274,8 +298,30 @@ const PricePrediction = () => {
                 <div className="predicted-price">
                   <TrendingUp size={32} color="#155e63" />
                   <div>
-                    <p className="label">Next Month Prediction</p>
-                    <h1>₹{predictionData.predicted_price}</h1>
+                    <p className="label">Next 3 Month Predictions</p>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      {getFutureMonthLabels().map((monthLabel, idx) => {
+                        const isActive = selectedFutureMonthIndex === idx;
+                        return (
+                          <button
+                            key={monthLabel}
+                            className={`filter-btn ${isActive ? 'active' : ''}`}
+                            style={{ minWidth: 80 }}
+                            onClick={() => setSelectedFutureMonthIndex(idx)}
+                          >
+                            {monthLabel}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <h1>
+                      ₹{(
+                        (predictionData.predicted_prices_next_3_months || predictionData.graph_data?.predictions || [])[selectedFutureMonthIndex] || 0
+                      ).toFixed(2)}
+                    </h1>
+                    <p className="label">
+                      Showing price for {getFutureMonthLabels()[selectedFutureMonthIndex]}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -344,19 +390,26 @@ const PricePrediction = () => {
                   </thead>
                   <tbody>
                     {predictionData.graph_data.actual_prices_last_12_months.map(
-                      (price, index) => (
-                        <tr key={index}>
-                          <td>Month {index + 1}</td>
-                          <td>₹{price.toFixed(2)}</td>
-                        </tr>
-                      )
+                      (price, index) => {
+                        const monthDate = new Date();
+                        monthDate.setMonth(monthDate.getMonth() - (11 - index));
+                        const monthLabel = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+                        return (
+                          <tr key={index}>
+                            <td>{monthLabel}</td>
+                            <td>₹{price.toFixed(2)}</td>
+                          </tr>
+                        );
+                      }
                     )}
-                    <tr className="predicted-row">
-                      <td>Predicted (Next Month)</td>
-                      <td className="predicted-value">
-                        ₹{predictionData.predicted_price}
-                      </td>
-                    </tr>
+                    {(predictionData.predicted_prices_next_3_months || predictionData.graph_data?.predictions || []).map((price, index) => (
+                      <tr key={`pred-${index}`} className="predicted-row">
+                        <td>Predicted (Month +{index + 1})</td>
+                        <td className="predicted-value">
+                          ₹{price.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

@@ -19,15 +19,15 @@ def predict_price(crop: str):
     crop = crop.lower()
 
     try:
-        predicted_price, last_actual_prices = predict_crop_price(crop)
+        predictions, last_actual_prices = predict_crop_price(crop, 3)
 
         return {
             "crop": crop,
             "unit": "₹ per quintal",
-            "predicted_price": round(predicted_price, 2),
+            "predicted_prices_next_3_months": [round(p, 2) for p in predictions],
             "graph_data": {
                 "actual_prices_last_12_months": last_actual_prices,
-                "predicted_next_month": round(predicted_price, 2)
+                "predictions": [round(p, 2) for p in predictions]
             }
         }
 

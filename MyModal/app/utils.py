@@ -79,20 +79,44 @@ def prepare_sequence_for_prediction(crop: str):
 
     return X_scaled, last_actual_prices
 
-def predict_crop_price(crop: str):
+def predict_crop_price(crop: str, n_steps=3):
 
     model = load_model(f"models/{crop}_lstm.h5")
     X_scaler = joblib.load(f"models/{crop}_scaler.pkl")
     y_scaler = joblib.load(f"models/{crop}_y_scaler.pkl")
 
+    # Get last sequence
     X_scaled, last_actual_prices = prepare_sequence_for_prediction(crop)
 
-    scaled_prediction = model.predict(X_scaled)
+    predictions = []
 
-    # 🔥 CRITICAL STEP
-    prediction = y_scaler.inverse_transform(scaled_prediction)[0][0]
+    current_input = X_scaled.copy()
 
-    return float(prediction), last_actual_prices
+    for _ in range(n_steps):
+
+        # Predict next step
+        scaled_pred = model.predict(current_input)
+        pred = y_scaler.inverse_transform(scaled_pred)[0][0]
+
+        predictions.append(float(pred))
+
+        # 🔥 Update sequence (IMPORTANT PART)
+
+        # Get last row features
+        last_row = current_input[0][-1].copy()
+
+        # Shift sequence left
+        new_seq = np.roll(current_input, -1, axis=1)
+
+        # Update lag features manually
+        # (approximation)
+        last_row[-1] = scaled_pred  # replace last value with predicted
+
+        new_seq[0, -1] = last_row
+
+        current_input = new_seq
+
+    return predictions, last_actual_prices
 
 
 

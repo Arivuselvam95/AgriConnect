@@ -19,7 +19,19 @@ exports.predictPrice = async (req, res) => {
       
     );
 
-    res.json(response.data);
+    // Transform response to ensure consistent format
+    const data = response.data;
+    const transformedData = {
+      crop: data.crop || crop,
+      unit: data.unit || "₹ per quintal",
+      predicted_prices_next_3_months: data.predicted_prices_next_3_months || data.predictions || [],
+      graph_data: {
+        actual_prices_last_12_months: data.graph_data?.actual_prices_last_12_months || [],
+        predictions: data.graph_data?.predictions || data.predicted_prices_next_3_months || []
+      }
+    };
+
+    res.json(transformedData);
 
   } catch (error) {
     console.error("Price Prediction Error:", error.message);
@@ -101,7 +113,7 @@ exports.getLastWeekMarketPrices = async (req, res) => {
       try {
         const response = await axios.get(process.env.AGMARKNET_BASE_URL, { 
           params,
-          timeout: 5000  // 5 second timeout
+          timeout: 10000  // 10 second timeout
         });
 
         // Handle different response formats from Agmarknet
